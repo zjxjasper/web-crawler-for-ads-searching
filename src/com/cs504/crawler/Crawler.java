@@ -236,11 +236,19 @@ public class Crawler {
                         }
                         dataBufferedWriter.write(productImg + "\n");
 
-                        String cssQueryPrice = "#result_" + i.toString();
+
+                        String cssQueryPrice = "#result_"+i.toString()+" > div > div > div > div.a-fixed-left-grid-col.a-col-right > div:nth-child(2) > div.a-column.a-span7 > div:nth-child(1) > div:nth-child(3) > a > span.a-color-base.sx-zero-spacing";
                         Elements elemsProdPrice = doc.select(cssQueryPrice);
                         String productPrice = elemsProdPrice.attr("aria-label");
                         System.out.println("prodctPrice is: " + productPrice);
                         dataBufferedWriter.write(productPrice + "\n");
+                        Double price;
+                        try{
+                            price = Double.valueOf(productPrice.trim().substring(1));
+                        }
+                        catch(Exception eNum) {
+                            price = 0.0;
+                        }
 
                         Element category = doc.select("#leftNavContainer > ul:nth-child(2) > div > li:nth-child(1) > span > a > h4").first();
                         String productCategory = category.text();
@@ -277,13 +285,7 @@ public class Crawler {
                         ad.setCategory(productCategory);
                         ad.setBrand(productBrand);
                         ad.setThumbnail(productImg);
-                        Double price;
-                        try{
-                            price = Double.valueOf(productPrice);
-                        }
-                        catch(NumberFormatException eNum) {
-                            price = 0.0;
-                        }
+
                         ad.setPrice(price);
                         ad.setQuery(query);
                         ad.setDescription("");
