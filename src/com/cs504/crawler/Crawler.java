@@ -10,6 +10,7 @@ import javax.management.ListenerNotFoundException;
 import javax.xml.crypto.Data;
 import java.io.*;
 import java.lang.reflect.Executable;
+import java.math.BigDecimal;
 import java.net.Authenticator;
 import java.net.PasswordAuthentication;
 import java.util.ArrayList;
@@ -120,7 +121,12 @@ public class Crawler {
         catch(IOException ex){
             System.out.println("Error reading file '" + queryListFile + "'");
         }
+        return queryList.size();
+    }
 
+    public int initPage() {
+        int pageRange = 0;
+        String line = null;
         try{
             FileReader fileReader = new FileReader(envFileName);
             BufferedReader bufferedReader = new BufferedReader(fileReader);
@@ -135,10 +141,7 @@ public class Crawler {
         catch(IOException ex){
             System.out.println("Error reading file '" + envFileName + "'");
         }
-
-
-
-        return queryList.size();
+        return pageRange;
     }
 
     public void initIO() {
@@ -164,7 +167,7 @@ public class Crawler {
 
     }
 
-    public void getAmazonProds(String[] queryParam, Integer index) throws Exception {
+    public void getAmazonProds(String[] queryParam, Integer index, Integer page) throws Exception {
 
         String query = queryParam[0];
         //query = "Nikon d3400";
@@ -176,176 +179,168 @@ public class Crawler {
         headers.put("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8");
         //headers.put("Accept-Encoding", "gzip, deflate, br");
         headers.put("Accept-Language", "en-US,en;q=0.8");
-        for(Integer page = 1; page <= pageRange; page++) {
-            String url = AMAZON_QUERY_URL + query + "&page=" + page.toString();
-            System.out.println("url: " + url);
-            try {
-                Document doc = Jsoup.connect(url).maxBodySize(0).headers(headers).userAgent(USER_AGENT).timeout(10000).get();
-                Integer docSize = doc.text().length();
-                System.out.println("page size: " + docSize);
-                Elements prods = doc.getElementsByClass("s-result-item celwidget ");
+        String url = AMAZON_QUERY_URL + query + "&page=" + page.toString();
+        System.out.println("url: " + url);
+        try {
+            Document doc = Jsoup.connect(url).maxBodySize(0).headers(headers).userAgent(USER_AGENT).timeout(10000).get();
+            Integer docSize = doc.text().length();
+            System.out.println("page size: " + docSize);
+            Elements prods = doc.getElementsByClass("s-result-item celwidget ");
 
-                dataBufferedWriter.write("\n");
-                Integer check = prods.size()/prods.size();
+            dataBufferedWriter.write("\n");
+            Integer check = prods.size()/prods.size();
 
 
+            if(systemPrint) {
+                System.out.println("query " + index.toString() + " page: " + page + ",target: " + query);
+                System.out.println("number of prod: " + prods.size());
+            }
+            dataBufferedWriter.write("query " + index.toString() + " page: " + page +  ",target: " + query + "\n");
+            dataBufferedWriter.write("Number of prod: " + prods.size() + "\n");
+
+            for(Integer i = 0;i < prods.size();i++){
+                String id = "result_" + i.toString();
+                Element prodsById = doc.getElementById(id);
+
+                String asin = prodsById.attr("data-asin");
                 if(systemPrint) {
-                    System.out.println("query " + index.toString() + " page: " + page + ",target: " + query);
-                    System.out.println("number of prod: " + prods.size());
+                    System.out.println("prod asin: " + asin);
                 }
-                dataBufferedWriter.write("query " + index.toString() + " page: " + page +  ",target: " + query + "\n");
-                dataBufferedWriter.write("Number of prod: " + prods.size() + "\n");
+                dataBufferedWriter.write(asin + "\n");
+                try {
+                    Elements titleEleList = prodsById.getElementsByAttribute("title");
+                    String prodTitle = "";
+                    for (Element titleEle : titleEleList) {
+                        if(systemPrint) {
+                            System.out.print("prod title 1: " + titleEle.attr("title"));
+                        }
+                        dataBufferedWriter.write(titleEle.attr("title"));
+                        prodTitle += titleEle.attr("title");
+                    }
+                    System.out.print("prod title 2: " + prodTitle);
 
-                for(Integer i = 0;i < prods.size();i++){
-                    String id = "result_" + i.toString();
-                    Element prodsById = doc.getElementById(id);
 
-                    String asin = prodsById.attr("data-asin");
+                    dataBufferedWriter.write("\n");
+                    String cssQueryUrl = "#result_" + i.toString() + "> div > div > div > div.a-fixed-left-grid-col.a-col-left > div > div > a";
+                    Elements elemsProdUrl = doc.select(cssQueryUrl);
+                    String productUrl = elemsProdUrl.attr("href");
                     if(systemPrint) {
-                        System.out.println("prod asin: " + asin);
+                        System.out.println("prodctUrl is: " + productUrl);
                     }
-                    dataBufferedWriter.write(asin + "\n");
+                    dataBufferedWriter.write(productUrl + "\n");
+
+
+                    String cssQueryImg = "#result_" + i.toString() + " > div > div > div > div.a-fixed-left-grid-col.a-col-left > div > div > a > img";
+                    Elements elemsProdImg = doc.select(cssQueryImg);
+                    String productImg = elemsProdImg.attr("src");
+                    if(systemPrint) {
+                        System.out.println("prodctImg is: " + productImg);
+                    }
+                    dataBufferedWriter.write(productImg + "\n");
+
+
+                    String cssQueryPrice = "#result_"+i.toString()+" > div > div > div > div.a-fixed-left-grid-col.a-col-right > div:nth-child(2) > div.a-column.a-span7 > div:nth-child(1) > div:nth-child(3) > a > span.a-color-base.sx-zero-spacing";
+                    Elements elemsProdPrice = doc.select(cssQueryPrice);
+                    String productPrice = elemsProdPrice.attr("aria-label");
+                    System.out.println("prodctPrice is: " + productPrice);
+                    dataBufferedWriter.write(productPrice + "\n");
+                    Double price = priceFormat(productPrice);
+
+                    Element category = doc.select("#leftNavContainer > ul:nth-child(2) > div > li:nth-child(1) > span > a > h4").first();
+                    String productCategory = category.text();
+                    if(systemPrint) {
+                        System.out.println("productCategory is: " + productCategory);
+                    }
+                    dataBufferedWriter.write(productCategory + "\n");
+
+
+                    String cssQueryBrand = "#result_"+ i.toString() +" > div > div > div > div.a-fixed-left-grid-col.a-col-right > div.a-row.a-spacing-small > div:nth-child(2) > span:nth-child(2)";
+                    Elements elemBrand = doc.select(cssQueryBrand);
+                    String productBrand;
+                    try{
+                        productBrand = elemBrand.first().text();
+                        if(systemPrint) {
+                            System.out.println("productBrand is: " + productBrand);
+
+                        }
+                    }
+                    catch(NullPointerException eNull) {
+                        productBrand = "";
+                        if(systemPrint) {
+                            System.out.println("productBrand not found");
+                        }
+                    }
+                    dataBufferedWriter.write(productBrand);
+
+
+                    Ad ad = new Ad(adId);
+                    ad.setCompainId(compainID);
+                    ad.setBidPrice(bidPrice);
+                    ad.setQuery_group_id(query_group_id);
+                    ad.setDetail_url(productUrl);
+                    ad.setCategory(productCategory);
+                    ad.setBrand(productBrand);
+                    ad.setThumbnail(productImg);
+
+                    ad.setPrice(price);
+                    ad.setQuery(query);
+                    ad.setDescription("");
+                    ad.setTitle(prodTitle);
+                    TitleTokenizer titleTokenizer = new TitleTokenizer();
+                    try{
+                        List<String> keywords = titleTokenizer.tokenNize(prodTitle);
+                        ad.setKeyWords(keywords);
+                    }
+                    catch (Exception eToken) {
+                        eToken.printStackTrace();
+                    }
+                    adId++;
+
+                    ObjectMapper mapper = new ObjectMapper();
                     try {
-                        Elements titleEleList = prodsById.getElementsByAttribute("title");
-                        String prodTitle = "";
-                        for (Element titleEle : titleEleList) {
-                            if(systemPrint) {
-                                System.out.print("prod title 1: " + titleEle.attr("title"));
-                            }
-                            dataBufferedWriter.write(titleEle.attr("title"));
-                            prodTitle += titleEle.attr("title");
-                        }
-                        System.out.print("prod title 2: " + prodTitle);
-
-
-                        dataBufferedWriter.write("\n");
-                        String cssQueryUrl = "#result_" + i.toString() + "> div > div > div > div.a-fixed-left-grid-col.a-col-left > div > div > a";
-                        Elements elemsProdUrl = doc.select(cssQueryUrl);
-                        String productUrl = elemsProdUrl.attr("href");
-                        if(systemPrint) {
-                            System.out.println("prodctUrl is: " + productUrl);
-                        }
-                        dataBufferedWriter.write(productUrl + "\n");
-
-
-                        String cssQueryImg = "#result_" + i.toString() + " > div > div > div > div.a-fixed-left-grid-col.a-col-left > div > div > a > img";
-                        Elements elemsProdImg = doc.select(cssQueryImg);
-                        String productImg = elemsProdImg.attr("src");
-                        if(systemPrint) {
-                            System.out.println("prodctImg is: " + productImg);
-                        }
-                        dataBufferedWriter.write(productImg + "\n");
-
-
-                        String cssQueryPrice = "#result_"+i.toString()+" > div > div > div > div.a-fixed-left-grid-col.a-col-right > div:nth-child(2) > div.a-column.a-span7 > div:nth-child(1) > div:nth-child(3) > a > span.a-color-base.sx-zero-spacing";
-                        Elements elemsProdPrice = doc.select(cssQueryPrice);
-                        String productPrice = elemsProdPrice.attr("aria-label");
-                        System.out.println("prodctPrice is: " + productPrice);
-                        dataBufferedWriter.write(productPrice + "\n");
-                        Double price;
-                        try{
-                            price = Double.valueOf(productPrice.trim().substring(1));
-                        }
-                        catch(Exception eNum) {
-                            price = 0.0;
-                        }
-
-                        Element category = doc.select("#leftNavContainer > ul:nth-child(2) > div > li:nth-child(1) > span > a > h4").first();
-                        String productCategory = category.text();
-                        if(systemPrint) {
-                            System.out.println("productCategory is: " + productCategory);
-                        }
-                        dataBufferedWriter.write(productCategory + "\n");
-
-
-                        String cssQueryBrand = "#result_"+ i.toString() +" > div > div > div > div.a-fixed-left-grid-col.a-col-right > div.a-row.a-spacing-small > div:nth-child(2) > span:nth-child(2)";
-                        Elements elemBrand = doc.select(cssQueryBrand);
-                        String productBrand;
-                        try{
-                            productBrand = elemBrand.first().text();
-                            if(systemPrint) {
-                                System.out.println("productBrand is: " + productBrand);
-
-                            }
-                        }
-                        catch(NullPointerException eNull) {
-                            productBrand = "";
-                            if(systemPrint) {
-                                System.out.println("productBrand not found");
-                            }
-                        }
-                        dataBufferedWriter.write(productBrand);
-
-
-                        Ad ad = new Ad(adId);
-                        ad.setCompainId(compainID);
-                        ad.setBidPrice(bidPrice);
-                        ad.setQuery_group_id(query_group_id);
-                        ad.setDetail_url(productUrl);
-                        ad.setCategory(productCategory);
-                        ad.setBrand(productBrand);
-                        ad.setThumbnail(productImg);
-
-                        ad.setPrice(price);
-                        ad.setQuery(query);
-                        ad.setDescription("");
-                        ad.setTitle(prodTitle);
-                        TitleTokenizer titleTokenizer = new TitleTokenizer();
-                        try{
-                            List<String> keywords = titleTokenizer.tokenNize(prodTitle);
-                            ad.setKeyWords(keywords);
-                        }
-                        catch (Exception eToken) {
-                            eToken.printStackTrace();
-                        }
-                        adId++;
-
-                        ObjectMapper mapper = new ObjectMapper();
-                        try {
-                            String jsonInString = mapper.writeValueAsString(ad);
-                            System.out.println(jsonInString);
-                            jsonBufferedWriter.write(jsonInString + "\n");
-                        }
-                        catch (JsonProcessingException eJson) {
-                            System.out.println("Transform ad into Json String failed");
-                        }
-
-
+                        String jsonInString = mapper.writeValueAsString(ad);
+                        System.out.println(jsonInString);
+                        jsonBufferedWriter.write(jsonInString + "\n");
                     }
-                    catch (IOException eIO){
-                        eIO.printStackTrace();
+                    catch (JsonProcessingException eJson) {
+                        System.out.println("Transform ad into Json String failed");
                     }
 
-                    // https://www.amazon.com/Camera-18-55mm-70-300mm-Telephoto-Filters/dp/B01LZE8P9M/ref=sr_1_8?ie=UTF8&qid=1499105326&sr=8-8&keywords=nikon+d3400
-                    // https://www.amazon.com/Canon-T6-Digital-Telephoto-Accessory/dp/B01D93Z89W/ref=sr_1_13?ie=UTF8&qid=1499105326&sr=8-13&keywords=nikon+d3400
-                    //String productUrl = doc.getElementsByClass("a-link-normal a-text-normal").toString();
-                    //System.out.println("prod url: " + productUrl);
+
                 }
+                catch (IOException eIO){
+                    eIO.printStackTrace();
+                }
+
+                // https://www.amazon.com/Camera-18-55mm-70-300mm-Telephoto-Filters/dp/B01LZE8P9M/ref=sr_1_8?ie=UTF8&qid=1499105326&sr=8-8&keywords=nikon+d3400
+                // https://www.amazon.com/Canon-T6-Digital-Telephoto-Accessory/dp/B01D93Z89W/ref=sr_1_13?ie=UTF8&qid=1499105326&sr=8-13&keywords=nikon+d3400
+                //String productUrl = doc.getElementsByClass("a-link-normal a-text-normal").toString();
+                //System.out.println("prod url: " + productUrl);
+            }
             /*
             Element category = doc.select("#leftNavContainer > ul:nth-child(2) > div > li:nth-child(1) > span > a > h4").first();
             String categoryStr = category.text();
             System.out.println("prod category: " + categoryStr);
             */
 
+        }
+        catch (org.jsoup.HttpStatusException eHttp) {
+            try {
+                logBufferedWriter.write("For query No." + index + "got jsoup.HttpStatusException\n");
             }
-            catch (org.jsoup.HttpStatusException eHttp) {
-                try {
-                    logBufferedWriter.write("For query No." + index + "got jsoup.HttpStatusException\n");
-                }
-                catch (IOException eIO1) {
-                    System.out.println("unable to write to log file with 'jsoup.HttpStatusException' ");
-                }
-                eHttp.printStackTrace();
+            catch (IOException eIO1) {
+                System.out.println("unable to write to log file with 'jsoup.HttpStatusException' ");
             }
-            catch (IOException eIO){
-                try {
-                    logBufferedWriter.write("For query No." + index + "got IOException\n");
-                }
-                catch (IOException eIO2) {
-                    System.out.println("unable to write to log file with 'IOException' ");
-                }
-                eIO.printStackTrace();
+            eHttp.printStackTrace();
+        }
+        catch (IOException eIO){
+            try {
+                logBufferedWriter.write("For query No." + index + "got IOException\n");
             }
+            catch (IOException eIO2) {
+                System.out.println("unable to write to log file with 'IOException' ");
+            }
+            eIO.printStackTrace();
         }
 
 
@@ -386,5 +381,24 @@ public class Crawler {
 
     }
 
+    public Double priceFormat(String priceStr) throws Exception{
+        Double price = 0.0;
+        priceStr = priceStr.trim();
+        if(priceStr.length() == 0){
+            return price;
+        }
+        else {
+            priceStr = priceStr.substring(1);
+            if(priceStr.contains("-")){
+                String[] prices = priceStr.split("-");
+                price = Double.valueOf(prices[0]);
+            }
+            else{
+                BigDecimal value = new BigDecimal(priceStr.replace(",", ""));
+                price = value.doubleValue();
+            }
+        }
+        return price;
+    }
 
 }

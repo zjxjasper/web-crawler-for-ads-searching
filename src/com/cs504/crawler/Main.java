@@ -15,6 +15,7 @@ public class Main {
 
     public static void main(String[] args) throws Exception{
 
+
         String crawlHistoryFileName = "CrawlHistory.log";
         BufferedWriter crawlHistoryBuffer = new BufferedWriter(new FileWriter(crawlHistoryFileName));
 
@@ -22,9 +23,10 @@ public class Main {
         int numQuery = crawler.initQuery();
         System.out.println("total Query number: " + numQuery);
         crawler.initIO();
+        int numPage = crawler.initPage();
         Set<Integer> queryTaskSet = new HashSet<>();
         Set<Integer> sucessSet = new HashSet<>();
-        for(int i = 0; i < numQuery; i++ ) {
+        for(int i = 0; i < numQuery*numPage; i++ ) {
             queryTaskSet.add(i);
         }
         int nTry = 0;
@@ -39,22 +41,24 @@ public class Main {
                 crawler.initProxy();
                 crawler.testProxy();
                 try{
-                    Thread.sleep(2000);
+                    Thread.sleep(500);
                 }
                 catch (InterruptedException e1) {
                     e1.printStackTrace();
                 }
-                String query = crawler.queryList.get(i);
+                Integer indexQuery = i/numPage;
+                Integer indexPage = i%numPage + 1;
+                String query = crawler.queryList.get(indexQuery);
                 String[] queryParam = query.split(",");
                 try{
-                    crawler.getAmazonProds(queryParam, i);
+                    crawler.getAmazonProds(queryParam, indexQuery, indexPage);
                     sucessSet.add(i);
-                    crawlHistoryBuffer.write("query " + i + " success\n");
-                    System.out.print("try " + nTry + " query " + i + " success\n");
+                    crawlHistoryBuffer.write("query " + indexQuery + ", page:" + indexPage + " success\n");
+                    System.out.print("try " + nTry + " query " + indexQuery + ", page:" + indexPage + " success\n");
                 }
                 catch (Exception eCraw){
-                    crawlHistoryBuffer.write("query " + i + " failed\n");
-                    System.out.print("try " + nTry + " query " + i + " failed\n");
+                    crawlHistoryBuffer.write("query " + indexQuery + ", page:" + indexPage + " failed\n");
+                    System.out.print("try " + nTry + " query " + indexQuery + ", page:" + indexPage + " failed\n");
                 }
             }
         }
@@ -63,6 +67,7 @@ public class Main {
         crawler.endIO();
 
     }
+
 
 
 
