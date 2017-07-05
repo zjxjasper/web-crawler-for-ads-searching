@@ -1,9 +1,5 @@
 package com.cs504.crawler;
 
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -67,10 +63,4 @@ public class Main {
         crawler.endIO();
 
     }
-
-
-
-
-
-
 }

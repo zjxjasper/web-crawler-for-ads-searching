@@ -198,10 +198,14 @@ public class Crawler {
 
             Integer startId = Integer.valueOf(doc.select("li[id^=result]").attr("id").substring(7));
             System.out.println("Prod start Id: " + startId);
-            for(Integer i = startId; i < startId + prods.size(); i++){
+            for(Integer i = 0; i < prods.size(); i++){
                 String id = "result_" + i.toString();
-                Element prodsById = doc.getElementById(id);
-
+                //Element prodsById = doc.getElementById(id);
+                Element prodsById = doc.select("li[id^=result]").get(i);
+                if(prodsById == null){
+                    System.out.println("product with id:" + id + " not found");
+                    continue;
+                }
                 String asin = prodsById.attr("data-asin");
                 if(systemPrint) {
                     System.out.println("prod asin: " + asin);
@@ -218,28 +222,28 @@ public class Crawler {
                         prodTitle += titleEle.attr("title");
                     }
                     System.out.print("prod title 2: " + prodTitle + "\n");
-
-
                     dataBufferedWriter.write("\n");
-                    String cssQueryUrl = "#result_" + i.toString() + "> div > div > div > div.a-fixed-left-grid-col.a-col-left > div > div > a";
-                    Elements elemsProdUrl = doc.select(cssQueryUrl);
-                    String productUrl = elemsProdUrl.attr("href");
+
+                    //String cssQueryUrl = "#result_" + i.toString() + "> div > div > div > div.a-fixed-left-grid-col.a-col-left > div > div > a";
+                    //Elements elemsProdUrl = doc.select(cssQueryUrl);
+                    //String productUrl = elemsProdUrl.attr("href");
+                    String productUrl = prodsById.select("a[href]").attr("href");
                     if(systemPrint) {
                         System.out.println("prodctUrl is: " + productUrl);
                     }
                     dataBufferedWriter.write(productUrl + "\n");
 
 
-                    String cssQueryImg = "#result_" + i.toString() + " > div > div > div > div.a-fixed-left-grid-col.a-col-left > div > div > a > img";
-                    Elements elemsProdImg = doc.select(cssQueryImg);
-                    String productImg = elemsProdImg.attr("src");
+                    //String cssQueryImg = "#result_" + i.toString() + " > div > div > div > div.a-fixed-left-grid-col.a-col-left > div > div > a > img";
+                    //Elements elemsProdImg = doc.select(cssQueryImg);
+                    //String productImg = elemsProdImg.attr("src");
+                    String productImg = prodsById.select("img[src]").attr("src");
                     if(systemPrint) {
                         System.out.println("prodctImg is: " + productImg);
                     }
                     dataBufferedWriter.write(productImg + "\n");
 
-                    String productPrice = doc.select("#result_" + i.toString()).select("span[aria-label^=$]").attr("aria-label");
-
+                    String productPrice = prodsById.select("span[aria-label^=$]").attr("aria-label");
                     System.out.println("prodctPrice is: " + productPrice);
                     dataBufferedWriter.write(productPrice + "\n");
                     Double price = priceFormat(productPrice);
@@ -251,7 +255,7 @@ public class Crawler {
                     }
                     dataBufferedWriter.write(productCategory + "\n");
 
-
+                    /*
                     String cssQueryBrand = "#result_"+ i.toString() +" > div > div > div > div.a-fixed-left-grid-col.a-col-right > div.a-row.a-spacing-small > div:nth-child(2) > span:nth-child(2)";
                     Elements elemBrand = doc.select(cssQueryBrand);
                     String productBrand;
@@ -269,6 +273,7 @@ public class Crawler {
                         }
                     }
                     dataBufferedWriter.write(productBrand);
+                    */
 
                     if(productUrl.length()*prodTitle.length() != 0) {
                         Ad ad = new Ad(adId);
@@ -277,7 +282,7 @@ public class Crawler {
                         ad.setQuery_group_id(query_group_id);
                         ad.setDetail_url(productUrl);
                         ad.setCategory(productCategory);
-                        ad.setBrand(productBrand);
+                        //ad.setBrand(productBrand);
                         ad.setThumbnail(productImg);
                         ad.setPrice(price);
                         ad.setQuery(query);
