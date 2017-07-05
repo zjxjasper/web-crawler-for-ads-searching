@@ -270,40 +270,42 @@ public class Crawler {
                     }
                     dataBufferedWriter.write(productBrand);
 
-
-                    Ad ad = new Ad(adId);
-                    ad.setCompainId(compainID);
-                    ad.setBidPrice(bidPrice);
-                    ad.setQuery_group_id(query_group_id);
-                    ad.setDetail_url(productUrl);
-                    ad.setCategory(productCategory);
-                    ad.setBrand(productBrand);
-                    ad.setThumbnail(productImg);
-                    ad.setPrice(price);
-                    ad.setQuery(query);
-                    ad.setDescription("");
-                    ad.setTitle(prodTitle);
-                    TitleTokenizer titleTokenizer = new TitleTokenizer();
-                    try{
-                        List<String> keywords = titleTokenizer.tokenNize(prodTitle);
-                        ad.setKeyWords(keywords);
-                    }
-                    catch (Exception eToken) {
-                        eToken.printStackTrace();
-                    }
-                    adId++;
-
-                    ObjectMapper mapper = new ObjectMapper();
-                    try {
-                        String jsonInString = mapper.writeValueAsString(ad);
-                        if(systemPrint) {
-                            System.out.println(jsonInString);
+                    if(productUrl.length()*prodTitle.length() != 0) {
+                        Ad ad = new Ad(adId);
+                        ad.setCompainId(compainID);
+                        ad.setBidPrice(bidPrice);
+                        ad.setQuery_group_id(query_group_id);
+                        ad.setDetail_url(productUrl);
+                        ad.setCategory(productCategory);
+                        ad.setBrand(productBrand);
+                        ad.setThumbnail(productImg);
+                        ad.setPrice(price);
+                        ad.setQuery(query);
+                        ad.setDescription("");
+                        ad.setTitle(prodTitle);
+                        TitleTokenizer titleTokenizer = new TitleTokenizer();
+                        try{
+                            List<String> keywords = titleTokenizer.tokenNize(prodTitle);
+                            ad.setKeyWords(keywords);
                         }
-                        jsonBufferedWriter.write(jsonInString + "\n");
+                        catch (Exception eToken) {
+                            eToken.printStackTrace();
+                        }
+                        adId++;
+
+                        ObjectMapper mapper = new ObjectMapper();
+                        try {
+                            String jsonInString = mapper.writeValueAsString(ad);
+                            if(systemPrint) {
+                                System.out.println(jsonInString);
+                            }
+                            jsonBufferedWriter.write(jsonInString + "\n");
+                        }
+                        catch (JsonProcessingException eJson) {
+                            System.out.println("Transform ad into Json String failed");
+                        }
                     }
-                    catch (JsonProcessingException eJson) {
-                        System.out.println("Transform ad into Json String failed");
-                    }
+
 
 
                 }
