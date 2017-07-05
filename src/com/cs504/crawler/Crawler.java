@@ -30,7 +30,7 @@ public class Crawler {
     private static final Integer maxPage = 10;
     private List<String> proxyList = new ArrayList<>();
     public List<String> queryList = new ArrayList<>();
-    private static final boolean systemPrint = true;
+    private static final boolean systemPrint = false;
 
     private static final String logFileName = "crawl_result.log";
     private static final String dataFileName = "crawl_result.data";
@@ -190,15 +190,15 @@ public class Crawler {
             dataBufferedWriter.write("\n");
             Integer check = prods.size()/prods.size();
 
+            System.out.println("query " + index.toString() + " page: " + page + ",target: " + query);
+            System.out.println("number of prod: " + prods.size());
 
-            if(systemPrint) {
-                System.out.println("query " + index.toString() + " page: " + page + ",target: " + query);
-                System.out.println("number of prod: " + prods.size());
-            }
             dataBufferedWriter.write("query " + index.toString() + " page: " + page +  ",target: " + query + "\n");
             dataBufferedWriter.write("Number of prod: " + prods.size() + "\n");
 
-            for(Integer i = 0;i < prods.size();i++){
+            Integer startId = Integer.valueOf(doc.select("li[id^=result]").attr("id").substring(7));
+            System.out.println("Prod start Id: " + startId);
+            for(Integer i = startId; i < startId + prods.size(); i++){
                 String id = "result_" + i.toString();
                 Element prodsById = doc.getElementById(id);
 
@@ -217,7 +217,7 @@ public class Crawler {
                         dataBufferedWriter.write(titleEle.attr("title"));
                         prodTitle += titleEle.attr("title");
                     }
-                    System.out.print("prod title 2: " + prodTitle);
+                    System.out.print("prod title 2: " + prodTitle + "\n");
 
 
                     dataBufferedWriter.write("\n");
@@ -238,10 +238,8 @@ public class Crawler {
                     }
                     dataBufferedWriter.write(productImg + "\n");
 
+                    String productPrice = doc.select("#result_" + i.toString()).select("span[aria-label^=$]").attr("aria-label");
 
-                    String cssQueryPrice = "#result_"+i.toString()+" > div > div > div > div.a-fixed-left-grid-col.a-col-right > div:nth-child(2) > div.a-column.a-span7 > div:nth-child(1) > div:nth-child(3) > a > span.a-color-base.sx-zero-spacing";
-                    Elements elemsProdPrice = doc.select(cssQueryPrice);
-                    String productPrice = elemsProdPrice.attr("aria-label");
                     System.out.println("prodctPrice is: " + productPrice);
                     dataBufferedWriter.write(productPrice + "\n");
                     Double price = priceFormat(productPrice);
@@ -281,7 +279,6 @@ public class Crawler {
                     ad.setCategory(productCategory);
                     ad.setBrand(productBrand);
                     ad.setThumbnail(productImg);
-
                     ad.setPrice(price);
                     ad.setQuery(query);
                     ad.setDescription("");
@@ -299,7 +296,9 @@ public class Crawler {
                     ObjectMapper mapper = new ObjectMapper();
                     try {
                         String jsonInString = mapper.writeValueAsString(ad);
-                        System.out.println(jsonInString);
+                        if(systemPrint) {
+                            System.out.println(jsonInString);
+                        }
                         jsonBufferedWriter.write(jsonInString + "\n");
                     }
                     catch (JsonProcessingException eJson) {

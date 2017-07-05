@@ -41,7 +41,7 @@ public class Main {
                 crawler.initProxy();
                 crawler.testProxy();
                 try{
-                    Thread.sleep(500);
+                    Thread.sleep(2000);
                 }
                 catch (InterruptedException e1) {
                     e1.printStackTrace();
