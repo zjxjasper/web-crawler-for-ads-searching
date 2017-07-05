@@ -17,14 +17,23 @@ public class Main {
 
         Crawler crawler = new Crawler();
         int numQuery = crawler.initQuery();
+        numQuery = 97;
         System.out.println("total Query number: " + numQuery);
         crawler.initIO();
         int numPage = crawler.initPage();
         Set<Integer> queryTaskSet = new HashSet<>();
         Set<Integer> sucessSet = new HashSet<>();
+        for(int i = 96*3; i < 97*3; i++ ) {
+            queryTaskSet.add(i);
+        }
+        for(int i = 213*3; i < 214*3; i++ ) {
+            queryTaskSet.add(i);
+        }
+        /*
         for(int i = 0; i < numQuery*numPage; i++ ) {
             queryTaskSet.add(i);
         }
+        */
         int nTry = 0;
         while(queryTaskSet.isEmpty() == false){
             for(Integer i: sucessSet){

@@ -38,7 +38,7 @@ public class Crawler {
     private static BufferedWriter dataBufferedWriter;
     private static BufferedWriter logBufferedWriter;
     private static BufferedWriter jsonBufferedWriter;
-    private int adId = 0;
+    private int adId = 14013;
 
     public void initProxy() {
         String line = null;
@@ -185,8 +185,8 @@ public class Crawler {
             Document doc = Jsoup.connect(url).maxBodySize(0).headers(headers).userAgent(USER_AGENT).timeout(10000).get();
             Integer docSize = doc.text().length();
             System.out.println("page size: " + docSize);
-            Elements prods = doc.getElementsByClass("s-result-item celwidget ");
-
+            //Elements prods = doc.getElementsByClass("s-result-item celwidget ");
+            Elements prods = doc.select("li[id^=result_]");
             dataBufferedWriter.write("\n");
             Integer check = prods.size()/prods.size();
 
